@@ -3,9 +3,7 @@ import random
 import string
 
 def generate_unique_name(existing_names):
-    """
-    Generate a unique 3-letter word not present in the existing_names list.
-    """
+
     name_length = 3
     while True:
         name = ''.join(random.choices(string.ascii_uppercase, k=name_length))
@@ -13,9 +11,7 @@ def generate_unique_name(existing_names):
             return name
 
 def generate_fault_tree():
-    """
-    Generate a fault tree graph with the specified features.
-    """
+   
     # Initialize graph
     fault_tree = nx.DiGraph()
 
