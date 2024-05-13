@@ -1,0 +1,79 @@
+import networkx as nx
+import random
+import string
+
+def generate_unique_name(existing_names):
+    """
+    Generate a unique 3-letter word not present in the existing_names list.
+    """
+    name_length = 3
+    while True:
+        name = ''.join(random.choices(string.ascii_uppercase, k=name_length))
+        if name not in existing_names:
+            return name
+
+def generate_fault_tree():
+    """
+    Generate a fault tree graph with the specified features.
+    """
+    # Initialize graph
+    fault_tree = nx.DiGraph()
+
+    # Keep track of generated node names
+    node_names = set()
+
+    # Add root node
+    root_name = generate_unique_name(node_names)
+    fault_tree.add_node(1, name=root_name, relation="Root")
+    node_names.add(root_name)
+
+    # Add parent nodes (Child nodes of the root node)
+    parent_nodes = [i for i in range(2, 8)]
+    for i in parent_nodes:
+        parent_name = generate_unique_name(node_names)
+        fault_tree.add_node(i, name=parent_name, relation=f"{1}")
+        fault_tree.add_edge(1, i)
+        node_names.add(parent_name)
+
+    # Add intermediate nodes
+    intermediate_nodes = []
+    for i in range(8, 30):
+        parent_node = random.choice(parent_nodes)
+        intermediate_name = generate_unique_name(node_names)
+        fault_tree.add_node(i, name=intermediate_name, relation=f"{parent_node}")
+        fault_tree.add_edge(parent_node, i)
+        node_names.add(intermediate_name)
+        intermediate_nodes.append(i)
+
+    # Add leaf nodes
+    for i in range(30, 53):
+        parent_node = random.choice(intermediate_nodes)
+        leaf_name = generate_unique_name(node_names)
+        fault_tree.add_node(i, name=leaf_name, relation=f"{parent_node}")
+        fault_tree.add_edge(parent_node, i)
+        node_names.add(leaf_name)
+
+    # Update Relations attribute for parent nodes
+    for node in parent_nodes:
+        children = list(fault_tree.successors(node))
+        relation = random.choice(["AND", "OR", "NOT"])
+        fault_tree.nodes[node]["relation"] += f" {relation} " + " ".join(map(str, children))
+
+    return fault_tree
+
+# Generate 100 fault tree graphs
+graphs = [generate_fault_tree() for _ in range(100)]
+
+# Print node attributes for the first graph
+print("Node Attributes for the first graph:")
+for node, data in graphs[0].nodes(data=True):
+    print(f"Node {node}: Name - {data['name']}, Relation - {data['relation']}")
+
+# Draw the first graph
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 8))
+pos = nx.planar_layout(graphs[0])
+nx.draw_networkx(graphs[0], pos, labels={node: node for node in graphs[0].nodes()}, with_labels=True, node_size=300, node_color="skyblue", font_size=8, edge_color="gray")
+plt.title("Planar Fault Tree Graph with Node Numbers")
+plt.show()
