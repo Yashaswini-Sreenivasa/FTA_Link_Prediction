@@ -8,7 +8,7 @@ class Node:
     id = int() - unique ID for the node, needs to be unique for the entire dataset 
     node_type = int() ∈ {0, 1, 2} 0 for top event, 1 for intermediate event, 2 for basic event
     depth = int() the depth of the node relative to the top event, top event is depth = 0
-    gate_type = int() ∈ {0, 1}, 0 = And-gate, 1 = Or-gate
+    gate_type = int() ∈ {0, 1, 2} 0 = No-gates, 1 = And-gate, 2 = Or-gate
 
     features = dictonary of all node features - you can add more to this dictionary 
     children = list of all the child nodes
@@ -29,7 +29,11 @@ class Node:
         self.features = {'id' : self.id, 
                          'node_type' : self.node_type,
                          'depth' : self.depth,
-                         'gate_type' : self.gate_type}                 
+                         'gate_type' : self.gate_type}        
+
+        # For Basic event added failure probability      
+        if self.node_type == 2:  
+            self.features['failure_probability'] = round(random.uniform(0, 1), 2)
 
 class FaultTree:
     '''
@@ -50,7 +54,7 @@ class FaultTree:
     # Functions
 
     def create_top_event(self):
-        gate_type = random.choice([0, 1])
+        gate_type = random.choice([1, 2])
         top_event = Node(self.id, 0, 0, gate_type)
         self.nodes.append(top_event)
         self.id = self.id + 1
@@ -61,8 +65,13 @@ class FaultTree:
             return
         num_children = random.randint(self.min_children, self.max_children)
         for _ in range(num_children):
-            gate_type = random.choice([0, 1])
-            node_type = 1 if node.depth + 1 < self.max_depth else 2
+            #Basic events have no gates(gate type =0)
+            if node.depth + 1 < self.max_depth:
+                gate_type = random.choice([1, 2])  
+                node_type = 1
+            else:
+                gate_type = 0  
+                node_type = 2
             child_node = Node(self.id, node_type, node.depth + 1, gate_type)
             node.children.append(child_node)
             child_node.parents.append(node)
@@ -85,18 +94,21 @@ class FaultTreeGenerator:
 
 
     # Methods
+    @staticmethod  
     def generate_fault_tree(id, max_depth, max_children, min_children):
         FT = FaultTree(id, min_children, max_children, max_depth)
         id = FT.id
         return FT, id
 
 class Converter:
-    pass
+    @staticmethod 
 
     def convert_to_graph(FT):
         graph = nx.DiGraph()
         for node in FT.nodes:
             graph.add_node(node.features['id'], **node.features)
+            # Print node features in the console
+            print(f"Node ID: {node.features['id']}, Features: {node.features}") 
         for node in FT.nodes:
             for node_ in node.parents:
                 graph.add_edge(node.id, node_.id)
@@ -116,4 +128,7 @@ class Generator:
                 FT, self.id = FaultTreeGenerator.generate_fault_tree(self.id, self.max_depth, self.max_children, self.min_children)
                 new_graph = Converter.convert_to_graph(FT)
                 self.graph = nx.compose(self.graph, new_graph)
+                # Planarity check
+                if not nx.check_planarity(self.graph)[0]:  
+                 raise ValueError("Generated graph is not planar")  
             return self.graph 
