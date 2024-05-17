@@ -22,9 +22,9 @@ if __name__ == '__main__':
 
     '''
     Displays node attributes on the graph
-    node_labels = {node: f"ID: {data['id']}\nP: {data.get('failure_probability', 'N/A')}"  
+    node_labels = {node: f"G: {data['gate_type']}"  
                    for node, data in G.nodes(data=True)}
-    nx.draw(G, pos, with_labels=True, labels=node_labels, node_size=5000, node_color='lightblue', font_size=8)  
+    nx.draw(G, pos, with_labels=True, labels=node_labels, node_size=500, node_color='lightblue', font_size=8)  
     '''
 
     #Displays node attributes on the console
