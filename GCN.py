@@ -133,7 +133,7 @@ def test(data):
     return roc_auc_score(data.edge_label.cpu().numpy(), out.cpu().numpy())
 
 # Training loop
-best_val_auc = final_test_auc = 0
+best_val_auc = final_test_auc = 0 
 for epoch in range(1, 51):
     loss = train()
     val_auc = test(val_data)
