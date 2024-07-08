@@ -1,4 +1,3 @@
-# Main script
 from generator import Node, FaultTree, FaultTreeGenerator, Converter, Generator
 import matplotlib.pyplot as plt
 import networkx as nx
