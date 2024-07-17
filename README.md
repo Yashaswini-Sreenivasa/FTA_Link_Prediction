@@ -6,6 +6,7 @@ This repository includes scripts for generating fault tree datasets and implemen
 Repository Structure
 
 main.py: Script to build and preprocess the dataset of fault trees according to specific requirements.
+
 generator.py: Utility script used alongside main.py for generating fault tree structures.
 
 _**Supervised Learning Models:**_
