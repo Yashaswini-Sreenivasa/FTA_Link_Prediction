@@ -4,7 +4,11 @@ from torch_geometric.transforms import RandomLinkSplit
 from torch_geometric.nn import GCNConv
 from torch_geometric.utils import negative_sampling
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, confusion_matrix, precision_recall_curve, average_precision_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.decomposition import PCA
+import numpy as np
 
 # Check for device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -132,17 +136,98 @@ def test(data):
     out = (z[data.edge_label_index[0]] * z[data.edge_label_index[1]]).sum(dim=-1).sigmoid()
     return roc_auc_score(data.edge_label.cpu().numpy(), out.cpu().numpy())
 
+# Lists to store metrics for plotting
+losses = []
+val_aucs = []
+test_aucs = []
+
 # Training loop
-best_val_auc = final_test_auc = 0 
-for epoch in range(1, 51):
+best_val_auc = final_test_auc = 0
+for epoch in range(1, 101):
     loss = train()
     val_auc = test(val_data)
     test_auc = test(test_data)
+
+    # Store metrics
+    losses.append(loss)
+    val_aucs.append(val_auc)
+    test_aucs.append(test_auc)
+
     if val_auc > best_val_auc:
         best_val_auc = val_auc
         final_test_auc = test_auc
         # Save the best model if needed
         torch.save(model.state_dict(), 'model.pth')
+
     print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Val: {val_auc:.4f}, Test: {test_auc:.4f}')
 
 print(f'Final Test AUC: {final_test_auc:.4f}')
+
+# Plotting the metrics
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 3, 1)
+plt.plot(losses, label='Training Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.subplot(1, 3, 2)
+plt.plot(val_aucs, label='Validation AUC')
+plt.xlabel('Epoch')
+plt.ylabel('AUC')
+plt.legend()
+
+plt.subplot(1, 3, 3)
+plt.plot(test_aucs, label='Test AUC')
+plt.xlabel('Epoch')
+plt.ylabel('AUC')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Additional Evaluation Metrics
+def evaluate_model(data):
+    model.eval()
+    z = model(data.x, data.edge_index)
+    out = (z[data.edge_label_index[0]] * z[data.edge_label_index[1]]).sum(dim=-1).sigmoid()
+    y_true = data.edge_label.cpu().numpy()
+    y_pred = out.detach().cpu().numpy()  # Detach tensor from computation graph
+    
+    # Confusion Matrix
+    y_pred_binary = (y_pred > 0.5).astype(int)
+    cm = confusion_matrix(y_true, y_pred_binary)
+    plt.figure(figsize=(5, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('Confusion Matrix')
+    plt.show()
+    
+    # Precision-Recall Curve
+    precision, recall, _ = precision_recall_curve(y_true, y_pred)
+    average_precision = average_precision_score(y_true, y_pred)
+    plt.figure()
+    plt.plot(recall, precision, label=f'Precision-Recall curve (AP = {average_precision:.2f})')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve')
+    plt.legend()
+    plt.show()
+    
+    # PCA for Node Embeddings
+    pca = PCA(n_components=2)
+    node_embeddings = z.cpu().detach().numpy()
+    pca_result = pca.fit_transform(node_embeddings)
+    plt.figure()
+    plt.scatter(pca_result[:, 0], pca_result[:, 1], c=data.x.cpu().numpy()[:, 0], cmap='viridis', s=10)
+    plt.colorbar()
+    plt.title('PCA of Node Embeddings')
+    plt.show()
+
+# Evaluate on validation and test datasets
+print("Validation Metrics:")
+evaluate_model(val_data)
+
+print("Test Metrics:")
+evaluate_model(test_data)
