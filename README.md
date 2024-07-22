@@ -19,4 +19,6 @@ GraphSAGE: Implementation of the Graph Sample and Aggregation (GraphSAGE) model 
 
 _**Reinforcement Learning Model:**_
 
-Rl.py: Implementation of the Graph Convolutional Network layers and training the model as an agent to predict missing links in the fault trees. 
+RL_GCN.py: Implementation of the Graph Convolutional Network layers and training the model as an agent to predict missing links in the fault trees. 
+
+RL_SAGE.py: Implementation of the GRAPHSAGE layers using Reinforcement learning techniques to predict links in a fault tree. 
